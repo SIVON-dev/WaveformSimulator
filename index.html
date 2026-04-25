@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waveform Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2336;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8eaf0;
+    --text2: #8a8fa8;
+    --text3: #555a70;
+    --accent: #378ADD;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+  }
+
+  header {
+    margin-bottom: 1.5rem;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+  }
+
+  .header-subrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  header p.sub {
+    font-size: 0.78rem;
+    color: var(--text3);
+    font-family: var(--mono);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sum-toggle-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .sum-toggle-header input { accent-color: var(--accent); cursor: pointer; }
+
+  #canvas-wrap {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #0a0c12;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+  }
+
+  .scope-timebase {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 2;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(10,12,18,0.85);
+    border: 1px solid var(--border2);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 12px;
+    color: var(--text2);
+    letter-spacing: 0.03em;
+    pointer-events: none;
+  }
+
+  .legend {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text2);
+  }
+
+  .legend-line {
+    width: 18px;
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  .legend-line.sum {
+    background: repeating-linear-gradient(90deg, #fff 0, #fff 4px, transparent 4px, transparent 7px);
+    height: 2px;
+  }
+
+  .controls {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wave-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    transition: border-color 0.15s;
+  }
+
+  .wave-row:hover { border-color: var(--border2); }
+
+  .wave-row.muted { opacity: 0.45; }
+
+  .wave-swatch {
+    width: 3px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .wave-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    align-items: center;
+  }
+
+  @media (max-width: 640px) {
+    .wave-inner { grid-template-columns: 1fr 1fr; }
+  }
+
+  .param {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .param label {
+    font-size: 9px;
+    font-family: var(--mono);
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .param-val {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text2);
+    min-width: 40px;
+  }
+
+  .param-val.freq-hz {
+    min-width: 52px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .freq-input {
+    width: 125px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    outline: none;
+  }
+
+  .freq-input:focus {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .freq-input::-webkit-outer-spin-button,
+  .freq-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .freq-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--surface2);
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text2);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover {
+    background: var(--text);
+    transform: scale(1.2);
+  }
+
+  input[type=range]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--text2);
+    cursor: pointer;
+    border: none;
+  }
+
+  .wave-type {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+
+  .wave-type button {
+    font-size: 9px;
+    font-family: var(--mono);
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.1s;
+    letter-spacing: 0.03em;
+  }
+
+  .wave-type button:hover { color: var(--text2); border-color: var(--text3); }
+
+  .wave-type button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .remove-btn {
+    font-size: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text3);
+    padding: 4px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: all 0.1s;
+    font-family: var(--mono);
+  }
+
+  .remove-btn:hover { background: rgba(226,75,74,0.15); color: #E24B4A; }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .toolbar-side {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .toolbar-side.right {
+    justify-content: flex-start;
+  }
+
+  .toolbar-side .btn {
+    min-width: 96px;
+  }
+
+  .timebase-cluster {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+
+  .timebase-btn {
+    min-width: 28px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .timebase-btn:hover:not(:disabled) {
+    color: var(--text);
+  }
+
+  .timebase-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .timebase-value {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    width: 108px;
+    text-align: center;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn:hover:not(:disabled) { border-color: var(--text2); color: var(--text); }
+
+  .btn.primary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn.primary:hover:not(:disabled) { background: var(--accent); color: #fff; }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  #playBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  #playBtn #playLabel {
+    line-height: 1;
+  }
+
+  #playBtn .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: background 0.2s;
+  }
+
+  #playBtn.playing .dot { background: #E24B4A; }
+  #playBtn.playing { border-color: #E24B4A; color: #E24B4A; }
+
+  .reset-row {
+    margin-top: 1.25rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .btn.reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text3);
+    border-color: var(--border2);
+  }
+
+  .btn.reset:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--text2);
+  }
+
+  .grid-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Waveform Simulator</h1>
+  <div class="header-subrow">
+    <p class="sub">stack, sum, & explore up to 6 oscillators</p>
+    <label class="sum-toggle-header">
+      <input type="checkbox" id="showSum">
+      show sum
+    </label>
+  </div>
+</header>
+
+<div id="canvas-wrap">
+  <canvas id="waveCanvas" height="240"></canvas>
+  <div class="scope-timebase" id="scopeTimebase"></div>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-side">
+    <button class="btn primary" id="addBtn">+ add wave</button>
+  </div>
+  <div class="timebase-cluster">
+    <button type="button" class="timebase-btn" id="tbMinus" aria-label="Slower timebase">−</button>
+    <span class="timebase-value" id="tbLabel"></span>
+    <button type="button" class="timebase-btn" id="tbPlus" aria-label="Faster timebase">+</button>
+  </div>
+  <div class="toolbar-side right">
+    <button class="btn" id="playBtn"><span class="dot"></span><span id="playLabel">play</span></button>
+  </div>
+</div>
+
+<div class="controls" id="waveControls"></div>
+
+<div class="reset-row">
+  <button type="button" class="btn reset" id="resetBtn" title="Restore C major triad & default scope">
+    <span>⟳</span>
+    <span>reset to C major</span>
+  </button>
+</div>
+
+<script>
+const MAX_WAVES = 6;
+const MAX_HZ = 20000;
+const PTS = 300;
+const HORIZ_DIVS = 8;
+const MS_PER_DIV_STEPS = [
+  0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500,
+];
+const DEFAULT_MS_PER_DIV_INDEX = Math.max(0, MS_PER_DIV_STEPS.indexOf(1));
+
+const COLORS = ['#378ADD', '#D4537E', '#1D9E75', '#EF9F27', '#7F77DD', '#D85A30'];
+const WAVE_TYPES = ['sine', 'triangle', 'square', 'sawtooth'];
+
+const MIN_LOG_HZ = 50;
+const HZ_SLIDER_RATIO = MAX_HZ / MIN_LOG_HZ;
+const INV_LOG_HZ_RANGE = 1 / Math.log10(HZ_SLIDER_RATIO);
+
+const C_MAJOR_DEFAULT = [
+  { type: 'sine', hz: 261.63, amp: 0.5, color: COLORS[0] },
+  { type: 'sine', hz: 329.63, amp: 0.5, color: COLORS[1] },
+  { type: 'sine', hz: 392.0, amp: 0.5, color: COLORS[2] },
+];
+
+let waves = [];
+let nextId = 0;
+let audioCtx = null;
+let oscillators = {};
+let gainNodes = {};
+let masterGain = null;
+let isPlaying = false;
+let msPerDivStepIndex = DEFAULT_MS_PER_DIV_INDEX;
+
+function formatMsPerDivLabel(ms) {
+  let s;
+  if (ms >= 1) {
+    s = Number.isInteger(ms) ? String(ms) : ms.toFixed(1).replace(/\.0$/, '');
+  } else {
+    s = ms < 0.1 ? ms.toFixed(2) : ms.toFixed(1);
+  }
+  return s + ' ms/div';
+}
+
+function hzToSliderNorm(hz) {
+  if (hz <= 0) return 0;
+  if (hz >= MAX_HZ) return 1;
+  if (hz <= MIN_LOG_HZ) return (hz / MIN_LOG_HZ) * 0.001;
+  return Math.log10(hz / MIN_LOG_HZ) * INV_LOG_HZ_RANGE;
+}
+
+function sliderNormToHz(p) {
+  const x = Math.min(1, Math.max(0, p));
+  if (x <= 0) return 0;
+  if (x >= 0.9999) return MAX_HZ;
+  if (x <= 0.001) return Math.min(MIN_LOG_HZ, Math.max(1, Math.round(x * 50000)));
+  return Math.min(MAX_HZ, Math.max(MIN_LOG_HZ, Math.round(MIN_LOG_HZ * Math.pow(HZ_SLIDER_RATIO, x))));
+}
+
+function formatHz(hz) {
+  const s = Number(hz.toFixed(10)).toString();
+  if (!s.includes('.')) return s;
+  return s.replace(/\.?0+$/, '').replace(/\.$/, '');
+}
+
+function sanitizeHzInput(text) {
+  const cleaned = text.replace(/[^0-9.]/g, '');
+  const dot = cleaned.indexOf('.');
+  if (dot === -1) return cleaned;
+  return cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, '');
+}
+
+function parseHzCommit(raw) {
+  if (raw === '' || raw === '.') return null;
+  const n = parseFloat(raw);
+  if (Number.isNaN(n)) return null;
+  return Math.max(0, Math.min(MAX_HZ, n));
+}
+
+function waveValueAtTime(w, tSec) {
+  if (w.amp === 0 || w.hz === 0) return 0;
+  const phase = 2 * Math.PI * w.hz * tSec;
+  switch (w.type) {
+    case 'triangle':
+      return (2 / Math.PI) * Math.asin(Math.sin(phase));
+    case 'square':
+      return Math.sin(phase) >= 0 ? 1 : -1;
+    case 'sawtooth': {
+      const frac = ((phase / (2 * Math.PI)) % 1 + 1) % 1;
+      return 2 * frac - 1;
+    }
+    default:
+      return Math.sin(phase);
+  }
+}
+
+function getMsPerDiv() {
+  return MS_PER_DIV_STEPS[msPerDivStepIndex];
+}
+
+function getTotalWindowSec() {
+  return (HORIZ_DIVS * getMsPerDiv()) / 1000;
+}
+
+function syncTimebaseUI() {
+  const label = formatMsPerDivLabel(getMsPerDiv());
+  document.getElementById('tbLabel').textContent = label;
+  document.getElementById('scopeTimebase').textContent = label;
+  document.getElementById('tbMinus').disabled = msPerDivStepIndex <= 0;
+  document.getElementById('tbPlus').disabled = msPerDivStepIndex >= MS_PER_DIV_STEPS.length - 1;
+}
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.25;
+    masterGain.connect(audioCtx.destination);
+  }
+  return audioCtx;
+}
+
+function audioHz(hz) {
+  return Math.max(0.001, hz);
+}
+
+function startAudio() {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  waves.forEach(w => {
+    if (!oscillators[w.id]) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = w.type === 'sawtooth' ? 'sawtooth' : w.type === 'square' ? 'square' : w.type === 'triangle' ? 'triangle' : 'sine';
+      osc.frequency.value = audioHz(w.hz);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(w.amp, ctx.currentTime + 0.08);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start();
+      oscillators[w.id] = osc;
+      gainNodes[w.id] = gain;
+    }
+  });
+}
+
+function stopAudio() {
+  const ctx = audioCtx;
+  if (!ctx) {
+    oscillators = {};
+    gainNodes = {};
+    return;
+  }
+  const now = ctx.currentTime;
+  Object.keys(gainNodes).forEach(id => {
+    const g = gainNodes[id];
+    if (g) {
+      try {
+        const cur = g.gain.value;
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(cur, now);
+        g.gain.linearRampToValueAtTime(0, now + 0.08);
+      } catch (e) {}
+    }
+  });
+  const dead = Object.values(oscillators);
+  oscillators = {};
+  gainNodes = {};
+  setTimeout(() => {
+    dead.forEach(o => { try { o.stop(); } catch (e) {} });
+  }, 150);
+}
+
+function syncOscillator(w) {
+  if (!isPlaying || !oscillators[w.id] || !audioCtx) return;
+  const osc = oscillators[w.id];
+  const gain = gainNodes[w.id];
+  const now = audioCtx.currentTime;
+  const typeMap = { sine: 'sine', triangle: 'triangle', square: 'square', sawtooth: 'sawtooth' };
+  osc.type = typeMap[w.type] || 'sine';
+  osc.frequency.setTargetAtTime(audioHz(w.hz), now, 0.008);
+  const cur = gain.gain.value;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(cur, now);
+  gain.gain.setTargetAtTime(w.amp, now, (cur < 0.02 && w.amp > 0) ? 0.06 : 0.008);
+}
+
+function addOscForWave(w) {
+  if (!isPlaying || !audioCtx) return;
+  const ctx = audioCtx;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = w.type === 'sawtooth' ? 'sawtooth' : w.type === 'square' ? 'square' : w.type === 'triangle' ? 'triangle' : 'sine';
+  osc.frequency.value = audioHz(w.hz);
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(w.amp, ctx.currentTime + 0.08);
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start();
+  oscillators[w.id] = osc;
+  gainNodes[w.id] = gain;
+}
+
+function removeOscForWave(id) {
+  if (oscillators[id] && audioCtx) {
+    const now = audioCtx.currentTime;
+    const gain = gainNodes[id];
+    const osc = oscillators[id];
+    try {
+      const cur = gain.gain.value;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(cur, now);
+      gain.gain.linearRampToValueAtTime(0, now + 0.08);
+    } catch (e) {}
+    delete oscillators[id];
+    delete gainNodes[id];
+    setTimeout(() => { try { osc.stop(); } catch (e) {} }, 150);
+  }
+}
+
+document.getElementById('playBtn').addEventListener('click', () => {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  const label = document.getElementById('playLabel');
+  if (isPlaying) {
+    startAudio();
+    btn.classList.add('playing');
+    label.textContent = 'stop';
+  } else {
+    stopAudio();
+    btn.classList.remove('playing');
+    label.textContent = 'play';
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && isPlaying) {
+    isPlaying = false;
+    stopAudio();
+    const btn = document.getElementById('playBtn');
+    btn.classList.remove('playing');
+    document.getElementById('playLabel').textContent = 'play';
+  }
+});
+
+function makeWaveFromPreset(p, idx) {
+  return {
+    id: nextId++,
+    type: p.type,
+    hz: p.hz,
+    amp: p.amp,
+    color: p.color || COLORS[idx % COLORS.length],
+  };
+}
+
+function loadCMajorDefault() {
+  stopAudio();
+  isPlaying = false;
+  const btn = document.getElementById('playBtn');
+  btn.classList.remove('playing');
+  document.getElementById('playLabel').textContent = 'play';
+  nextId = 0;
+  waves = C_MAJOR_DEFAULT.map((p, i) => makeWaveFromPreset(p, i));
+  msPerDivStepIndex = DEFAULT_MS_PER_DIV_INDEX;
+  document.getElementById('showSum').checked = false;
+  syncTimebaseUI();
+  renderControls();
+  draw();
+}
+
+function addWave() {
+  if (waves.length >= MAX_WAVES) return;
+  const used = new Set(waves.map(w => w.color));
+  const color = COLORS.find(c => !used.has(c)) || COLORS[waves.length % COLORS.length];
+  const w = {
+    id: nextId++,
+    type: 'sine',
+    hz: Math.min(MAX_HZ, Math.round(110 * (1 + waves.length * 0.5))),
+    amp: 0.5,
+    color,
+  };
+  waves.push(w);
+  addOscForWave(w);
+  renderControls();
+  draw();
+}
+
+function removeWave(id) {
+  removeOscForWave(id);
+  waves = waves.filter(w => w.id !== id);
+  renderControls();
+  draw();
+}
+
+function draw() {
+  const canvas = document.getElementById('waveCanvas');
+  const W = canvas.offsetWidth;
+  if (!W) return;
+  const DPR = window.devicePixelRatio || 1;
+  canvas.width = W * DPR;
+  canvas.height = 240 * DPR;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  const H = 240;
+  const mid = H / 2;
+  const showSum = document.getElementById('showSum').checked;
+  const totalWindowSec = getTotalWindowSec();
+  const pts = PTS;
+
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const y = (i / 4) * H;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+  for (let i = 1; i < 8; i++) {
+    const x = (i / 8) * W;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, mid);
+  ctx.lineTo(W, mid);
+  ctx.stroke();
+
+  const sumY = new Array(pts).fill(0);
+
+  waves.forEach(w => {
+    ctx.strokeStyle = w.color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = showSum ? 0.45 : 0.85;
+
+    if (w.amp === 0) {
+      ctx.beginPath();
+      ctx.moveTo(0, mid);
+      ctx.lineTo(W, mid);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      for (let i = 0; i <= pts; i++) {
+        const t = i / pts;
+        const x = t * W;
+        const tSec = t * totalWindowSec;
+        const v = waveValueAtTime(w, tSec) * w.amp;
+        const y = mid - v * H * 0.42;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        if (i < pts) sumY[i] += v;
+      }
+      ctx.stroke();
+    }
+  });
+
+  if (showSum && waves.length > 1) {
+    const maxAbs = Math.max(...sumY.map(Math.abs), 0.001);
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 1;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    for (let i = 0; i < pts; i++) {
+      const x = (i / pts) * W;
+      const norm = maxAbs > 1 ? maxAbs : 1;
+      const v = sumY[i] / norm;
+      const y = mid - v * H * 0.42;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.globalAlpha = 1;
+  updateLegend(showSum);
+}
+
+function updateLegend(showSum) {
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  waves.forEach(w => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const line = document.createElement('div');
+    line.className = 'legend-line';
+    line.style.background = w.amp === 0 ? 'rgba(255,255,255,0.2)' : w.color;
+    item.appendChild(line);
+    item.appendChild(document.createTextNode(
+      Math.round(w.hz) + ' Hz · ' + w.type + (w.amp === 0 ? ' [muted]' : '')
+    ));
+    legend.appendChild(item);
+  });
+  if (showSum && waves.length > 1) {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const line = document.createElement('div');
+    line.className = 'legend-line sum';
+    item.appendChild(line);
+    item.appendChild(document.createTextNode('sum'));
+    legend.appendChild(item);
+  }
+}
+
+function renderControls() {
+  const container = document.getElementById('waveControls');
+  container.innerHTML = '';
+  document.getElementById('addBtn').disabled = waves.length >= MAX_WAVES;
+
+  waves.forEach(w => {
+    const row = document.createElement('div');
+    row.className = 'wave-row' + (w.amp === 0 ? ' muted' : '');
+    row.id = 'row-' + w.id;
+
+    const swatch = document.createElement('div');
+    swatch.className = 'wave-swatch';
+    swatch.style.background = w.color;
+
+    const inner = document.createElement('div');
+    inner.className = 'wave-inner';
+
+    const freqP = document.createElement('div');
+    freqP.className = 'param';
+    const norm = hzToSliderNorm(w.hz);
+    freqP.innerHTML = `<label>frequency</label>
+      <input type="range" min="0" max="1" step="0.001" value="${norm}" data-id="${w.id}" data-prop="hzNorm">
+      <span class="param-val freq-hz">
+        <input type="text" inputmode="decimal" class="freq-input" id="fi${w.id}" data-id="${w.id}" value="${formatHz(w.hz)}">
+        <span id="fv${w.id}">${Math.round(w.hz)} Hz</span>
+      </span>`;
+
+    const ampP = document.createElement('div');
+    ampP.className = 'param';
+    ampP.innerHTML = `<label>amplitude</label>
+      <input type="range" min="0" max="1" step="0.01" value="${w.amp}" data-id="${w.id}" data-prop="amp">
+      <span class="param-val" id="av${w.id}">${w.amp === 0 ? 'muted' : Math.round(w.amp * 100) + '%'}</span>`;
+
+    const shapeP = document.createElement('div');
+    shapeP.className = 'param';
+    const shapeLabel = document.createElement('label');
+    shapeLabel.textContent = 'shape';
+    const wt = document.createElement('div');
+    wt.className = 'wave-type';
+    wt.id = 'wt' + w.id;
+    WAVE_TYPES.forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = t.slice(0, 3);
+      b.dataset.id = w.id;
+      b.dataset.type = t;
+      if (w.type === t) b.classList.add('active');
+      b.addEventListener('click', e => {
+        const id = +e.target.dataset.id;
+        const type = e.target.dataset.type;
+        const wv = waves.find(x => x.id === id);
+        if (!wv) return;
+        wv.type = type;
+        document.querySelectorAll('#wt' + id + ' button').forEach(x => {
+          x.classList.toggle('active', x.dataset.type === type);
+        });
+        syncOscillator(wv);
+        draw();
+      });
+      wt.appendChild(b);
+    });
+    shapeP.appendChild(shapeLabel);
+    shapeP.appendChild(wt);
+
+    inner.appendChild(freqP);
+    inner.appendChild(ampP);
+    inner.appendChild(shapeP);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => removeWave(w.id));
+
+    row.appendChild(swatch);
+    row.appendChild(inner);
+    row.appendChild(removeBtn);
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll('input[type=range]').forEach(el => {
+    el.addEventListener('input', e => {
+      const id = +e.target.dataset.id;
+      const prop = e.target.dataset.prop;
+      const wv = waves.find(w => w.id === id);
+      if (!wv) return;
+      if (prop === 'hzNorm') {
+        let p = parseFloat(e.target.value);
+        p = Math.min(1, Math.max(0, p));
+        if (hzToSliderNorm(wv.hz) > 0.9 && p <= 0.0001 && wv.hz >= 2000) return;
+        wv.hz = sliderNormToHz(p);
+        document.getElementById('fv' + id).textContent = Math.round(wv.hz) + ' Hz';
+        const fi = document.getElementById('fi' + id);
+        if (fi) fi.value = formatHz(wv.hz);
+      } else if (prop === 'amp') {
+        const val = Math.round(parseFloat(e.target.value) * 100) / 100;
+        wv.amp = val;
+        document.getElementById('av' + id).textContent = val === 0 ? 'muted' : Math.round(val * 100) + '%';
+        const rowEl = document.getElementById('row-' + id);
+        if (rowEl) rowEl.classList.toggle('muted', val === 0);
+      }
+      syncOscillator(wv);
+      draw();
+    });
+  });
+
+  container.querySelectorAll('.freq-input').forEach(el => {
+    el.addEventListener('input', e => {
+      e.target.value = sanitizeHzInput(e.target.value);
+    });
+    const commit = e => {
+      const id = +e.target.dataset.id;
+      const n = parseHzCommit(e.target.value.trim());
+      const wv = waves.find(w => w.id === id);
+      if (!wv || n === null) return;
+      wv.hz = n;
+      e.target.value = formatHz(wv.hz);
+      const slider = container.querySelector(`input[data-prop="hzNorm"][data-id="${id}"]`);
+      if (slider) slider.value = String(hzToSliderNorm(wv.hz));
+      const lab = document.getElementById('fv' + id);
+      if (lab) lab.textContent = Math.round(wv.hz) + ' Hz';
+      syncOscillator(wv);
+      draw();
+    };
+    el.addEventListener('change', commit);
+    el.addEventListener('blur', commit);
+  });
+}
+
+document.getElementById('addBtn').addEventListener('click', addWave);
+document.getElementById('showSum').addEventListener('change', draw);
+document.getElementById('tbMinus').addEventListener('click', () => {
+  if (msPerDivStepIndex <= 0) return;
+  msPerDivStepIndex--;
+  syncTimebaseUI();
+  draw();
+});
+document.getElementById('tbPlus').addEventListener('click', () => {
+  if (msPerDivStepIndex >= MS_PER_DIV_STEPS.length - 1) return;
+  msPerDivStepIndex++;
+  syncTimebaseUI();
+  draw();
+});
+document.getElementById('resetBtn').addEventListener('click', loadCMajorDefault);
+window.addEventListener('resize', draw);
+
+loadCMajorDefault();
+</script>
+</body>
+</html>
