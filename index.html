@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Waveform Simulator</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
+    --scope-height: 240px;
     --bg: #0f1117;
     --surface: #181c27;
     --surface2: #1e2336;
@@ -84,6 +85,7 @@
   canvas {
     display: block;
     width: 100%;
+    height: var(--scope-height);
   }
 
   .scope-timebase {
@@ -168,10 +170,6 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
     align-items: center;
-  }
-
-  @media (max-width: 640px) {
-    .wave-inner { grid-template-columns: 1fr 1fr; }
   }
 
   .param {
@@ -448,6 +446,209 @@
     top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
   }
+
+  @media (max-width: 640px) {
+    body {
+      padding: 1.25rem max(0.875rem, env(safe-area-inset-left)) 1.5rem max(0.875rem, env(safe-area-inset-right));
+      padding-top: max(1.25rem, env(safe-area-inset-top));
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+
+    header {
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: 1rem;
+    }
+
+    header p.sub {
+      font-size: 0.72rem;
+    }
+
+    .sum-toggle-header {
+      font-size: 11px;
+      gap: 6px;
+    }
+
+    :root {
+      --scope-height: 200px;
+    }
+
+    #canvas-wrap {
+      border-radius: 6px;
+    }
+
+    .scope-timebase {
+      top: 8px;
+      right: 8px;
+      padding: 3px 6px;
+      font-size: 9px;
+      line-height: 11px;
+      border-radius: 5px;
+    }
+
+    .legend {
+      bottom: 8px;
+      right: 8px;
+      gap: 8px;
+      max-width: calc(100% - 16px);
+    }
+
+    .legend-item {
+      font-size: 9px;
+      gap: 4px;
+    }
+
+    .legend-line {
+      width: 14px;
+    }
+
+    .controls {
+      margin-top: 0.75rem;
+      gap: 6px;
+    }
+
+    .wave-row {
+      padding: 8px 10px;
+      gap: 10px;
+      grid-template-columns: 10px 1fr auto;
+      border-radius: 6px;
+    }
+
+    .wave-swatch {
+      height: 32px;
+    }
+
+    .wave-inner {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .param {
+      gap: 3px;
+    }
+
+    .param label {
+      font-size: 8px;
+    }
+
+    .param-val {
+      font-size: 10px;
+      min-width: 36px;
+    }
+
+    .param-val.freq-hz {
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .freq-input {
+      width: min(100%, 108px);
+      font-size: 10px;
+      padding: 4px 6px;
+    }
+
+    input[type=range] {
+      height: 4px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      width: 14px;
+      height: 14px;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+    }
+
+    .wave-type {
+      gap: 2px;
+    }
+
+    .wave-type button {
+      font-size: 8px;
+      padding: 4px 6px;
+      min-height: 28px;
+    }
+
+    .remove-btn {
+      font-size: 13px;
+      padding: 8px 10px;
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    .toolbar {
+      margin-top: 8px;
+      gap: 6px;
+      row-gap: 8px;
+    }
+
+    .toolbar-side .btn {
+      min-width: 0;
+      padding: 8px 12px;
+      min-height: 40px;
+    }
+
+    .timebase-cluster {
+      padding: 4px 5px;
+      gap: 3px;
+    }
+
+    .timebase-btn {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 6px 8px;
+      font-size: 16px;
+    }
+
+    .timebase-value {
+      width: 96px;
+      font-size: 10px;
+    }
+
+    .btn {
+      font-size: 11px;
+      padding: 8px 12px;
+      min-height: 40px;
+    }
+
+    #playBtn {
+      gap: 5px;
+    }
+
+    #playBtn .dot {
+      width: 8px;
+      height: 8px;
+    }
+
+    .reset-row {
+      margin-top: 1rem;
+    }
+
+    .btn.reset {
+      gap: 6px;
+      padding: 8px 14px;
+      min-height: 40px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    header h1 {
+      font-size: 0.95rem;
+    }
+
+    .timebase-value {
+      width: 82px;
+      font-size: 9px;
+    }
+
+    .freq-input {
+      width: min(100%, 96px);
+    }
+  }
 </style>
 </head>
 <body>
@@ -464,7 +665,7 @@
 </header>
 
 <div id="canvas-wrap">
-  <canvas id="waveCanvas" height="240"></canvas>
+  <canvas id="waveCanvas"></canvas>
   <div class="scope-timebase" id="scopeTimebase"></div>
   <div class="legend" id="legend"></div>
 </div>
@@ -784,16 +985,22 @@ function removeWave(id) {
   draw();
 }
 
+function getScopeHeightPx() {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--scope-height').trim();
+  const n = parseFloat(raw);
+  return Number.isFinite(n) && n > 0 ? n : 240;
+}
+
 function draw() {
   const canvas = document.getElementById('waveCanvas');
   const W = canvas.offsetWidth;
   if (!W) return;
+  const H = getScopeHeightPx();
   const DPR = window.devicePixelRatio || 1;
   canvas.width = W * DPR;
-  canvas.height = 240 * DPR;
+  canvas.height = H * DPR;
   const ctx = canvas.getContext('2d');
   ctx.scale(DPR, DPR);
-  const H = 240;
   const mid = H / 2;
   const showSum = document.getElementById('showSum').checked;
   const totalWindowSec = getTotalWindowSec();
