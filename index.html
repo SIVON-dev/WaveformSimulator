@@ -538,21 +538,21 @@
 
   .chord-row {
     display: grid;
-    grid-template-columns: 64px 1fr;
+    grid-template-columns: 28px 1fr;
     align-items: center;
     gap: 6px;
   }
 
   .chord-row-label {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 12px;
     color: var(--text3);
     white-space: nowrap;
   }
 
   .chord-buttons {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(11, minmax(0, 1fr));
     gap: 3px;
   }
 
@@ -1174,18 +1174,22 @@ function applyChord(rootIdx, quality) {
   draw();
 }
 
+// One row per root letter, starting from A. Every chord in a row is built
+// on that row's letter (A, Am, A°, A+, … all use A as the root).
+const ROOT_ORDER = Array.from({ length: 12 }, (_, i) => (9 + i) % 12); // A, B♭, B, C, … A♭
+
 function buildChordTable() {
   const table = document.getElementById('chordTable');
   table.innerHTML = '';
-  CHORD_QUALITIES.forEach(q => {
+  ROOT_ORDER.forEach(r => {
     const row = document.createElement('div');
     row.className = 'chord-row';
     const label = document.createElement('span');
     label.className = 'chord-row-label';
-    label.textContent = q.label;
+    label.textContent = NOTE_NAMES[r];
     const btns = document.createElement('div');
     btns.className = 'chord-buttons';
-    NOTE_NAMES.forEach((_, r) => {
+    CHORD_QUALITIES.forEach(q => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'chord-btn';
