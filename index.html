@@ -867,7 +867,7 @@ const C_MAJOR_DEFAULT = [
   { type: 'sine', hz: 392.0, amp: 0.5, color: COLORS[2] },
 ];
 
-const NOTE_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 const CHORD_QUALITIES = [
   { key: 'maj',  label: 'major',      suffix: '',     intervals: [0, 4, 7] },
   { key: 'min',  label: 'minor',      suffix: 'm',    intervals: [0, 3, 7] },
@@ -1176,7 +1176,7 @@ function applyChord(rootIdx, quality) {
 
 // One row per root letter, starting from A. Every chord in a row is built
 // on that row's letter (A, Am, A°, A+, … all use A as the root).
-const ROOT_ORDER = Array.from({ length: 12 }, (_, i) => (9 + i) % 12); // A, B♭, B, C, … A♭
+const ROOT_ORDER = Array.from({ length: 12 }, (_, i) => (9 + i) % 12); // A, A♯, B, C, … G♯
 
 function buildChordTable() {
   const table = document.getElementById('chordTable');
